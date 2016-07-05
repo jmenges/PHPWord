@@ -1,5 +1,5 @@
 {
-    "name": "jmenges/phpword",
+    "name": "phpoffice/phpword",
     "description": "Fork of PHPWord - A pure PHP library for reading and writing word processing documents (DOCX, ODT, RTF, HTML, PDF)",
     "keywords": [
         "PHP", "PhpOffice", "office", "PhpWord", "word", "template", "template processor", "reader", "writer",
