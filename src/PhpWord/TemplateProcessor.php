@@ -510,8 +510,8 @@ class TemplateProcessor
     }
 
     /**
-  	  * custom functions created by dev.menges.jonas@gmail.com
-  	 **/
+  	 * custom functions created by dev.menges.jonas@gmail.com
+  	*/
   	public function removeUnsetVariables(){
   		$this->tempDocumentMainPart = preg_replace('/\$\{.*?\}/', null, $this->tempDocumentMainPart);
     }
