@@ -403,6 +403,8 @@ class TemplateProcessor
             $search = '${' . $search . '}';
         }
 
+        //convert newline to the word xml newline format
+        $replace = preg_replace('~\R~u', '</w:t><w:br/><w:t>', $replace);
         if (!String::isUTF8($replace)) {
             $replace = utf8_encode($replace);
         }
@@ -505,5 +507,82 @@ class TemplateProcessor
         }
 
         return substr($this->tempDocumentMainPart, $startPosition, ($endPosition - $startPosition));
+    }
+
+    /**
+  	  * custom functions created by dev.menges.jonas@gmail.com
+  	 **/
+  	public function removeUnsetVariables(){
+  		$this->tempDocumentMainPart = preg_replace('/\$\{.*?\}/', null, $this->tempDocumentMainPart);
+    }
+
+    /**
+    * Removes a row from a table by finding a tag in a cell and stripping
+    * the row out
+    *
+    * @param string $search A tag in a table cell in the row to remove
+    */
+    public function removeRowsRegex($search) {
+      while ((preg_match('/\$\{'.$search.'.*?\}/', $this->tempDocumentMainPart, $match, PREG_OFFSET_CAPTURE)) && ($tagPos = $match[0][1])){
+          $rowStart = $this->findRowStart($tagPos);
+          $rowEnd = $this->findRowEnd($tagPos);
+          $xmlRow = $this->getSlice($rowStart, $rowEnd);
+    
+          $result = $this->getSlice(0, $rowStart);
+          $result .= $this->getSlice($rowEnd);
+    
+          $this->tempDocumentMainPart = $result;
+      }
+    }
+
+
+    /**
+    * Clone a section.
+    *
+    * @param string $bookmark
+    * @param integer $clones
+    * @param boolean $replace
+    * @return string|null
+    */
+    public function cloneSection($bookmark, $clones = 1, $replace = true)
+    {
+      if($clones == 0){
+          return;
+      }
+    
+      $xml=new \SimpleXMLElement($this->tempDocumentMainPart);
+      $namespaces = $xml->getNameSpaces(true);
+      $xml->registerXPathNamespace('w', $namespaces['w']);
+      $bookmarkStart = $xml->xpath('//w:bookmarkStart[@w:name="'.$bookmark.'"]')[0];
+      preg_match_all('/(w:id=")([0-9].*?)(")/',$bookmarkStart->asXML(),$result);
+      $bookmarkID = $result[2][0];
+      $bookmarkEnd = $xml->xpath('//w:bookmarkEnd[@w:id="'.$bookmarkID.'"]')[0];
+    
+      $paragraph = $bookmarkStart->xpath('..')[0];
+      $table = $paragraph->xpath('following-sibling::w:tbl')[0];
+    
+      //template used for duplicating
+      //cleanup before copying by
+      //removing self reference
+      //(http://stackoverflow.com/questions/262351/remove-a-child-with-a-specific-attribute-in-simplexml-for-php)
+      unset($bookmarkStart[0]);
+      unset($bookmarkEnd[0]);
+      $paragraphTemplate = $paragraph->asXML();
+      $tableTemplate = $table->asXML();
+    
+      //now lets clone the sections
+      for($i=1; $i <= $clones; $i++){
+          if (isset($newXml)){
+              $newXml .= preg_replace('/\$\{(.*?)\}/', '\${\\1!' . $i . '}', $paragraphTemplate) .
+              preg_replace('/\$\{(.*?)\}/', '\${\\1!' . $i . '}', $tableTemplate);
+          } else {
+              $newXml = preg_replace('/\$\{(.*?)\}/', '\${\\1!' . $i . '}', $paragraphTemplate) .
+              preg_replace('/\$\{(.*?)\}/', '\${\\1!' . $i . '}', $tableTemplate);            }
+      }
+      if (isset($newXml)){
+          $xml = str_replace($paragraph->asXML().$table->asXML(), $newXml, $xml->asXML());
+      }
+    
+      $this->tempDocumentMainPart = $xml;
     }
 }
