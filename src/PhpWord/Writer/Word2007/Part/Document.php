@@ -135,4 +135,17 @@ class Document extends AbstractPart
 
         $xmlWriter->endElement(); // w:sectPr
     }
+    
+    //custom function by dev.menges.jonas@gmail.com
+    public function getTableAsText($element){
+        if($this->getParentWriter()->getUseDiskCaching()) {
+            $objWriter = new XMLWriter(XMLWriter::STORAGE_DISK, $this->getParentWriter()->getDiskCachingDirectory());
+        } else {
+            $objWriter = new XMLWriter(XMLWriter::STORAGE_MEMORY);
+        }
+        $wTable = new Table($objWriter, $element, true);
+        $wTable->write();
+        return trim(preg_replace("/[\x1-\x8\xB-\xC\xE-\x1F-\t+]/", "", $objWriter->getData()));
+
+    }
 }
